@@ -1,0 +1,36 @@
+version: '3.9'
+  services:
+    bot:
+      build: .
+      restart: unless-stopped
+      env_file: .env
+      depends_on:
+        mongo: { condition: service_healthy }
+      volumes:
+        - downloads:/tmp/tgbot_downloads
+      networks: [bot_net]
+
+    mongo:
+      image: mongo:7
+      restart: unless-stopped
+      volumes: [mongo_data:/data/db]
+      healthcheck:
+        test: ["CMD","mongosh","--eval","db.adminCommand('ping')"]
+        interval: 10s
+        timeout: 5s
+        retries: 5
+      networks: [bot_net]
+
+    redis:
+      image: redis:7-alpine
+      restart: unless-stopped
+      command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+      networks: [bot_net]
+
+  volumes:
+    mongo_data:
+    downloads:
+
+  networks:
+    bot_net:
+  
